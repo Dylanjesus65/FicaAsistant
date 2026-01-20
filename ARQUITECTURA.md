@@ -1,6 +1,6 @@
 # 🏗️ Arquitectura del Sistema FicaAsistant
 
-Este documento describe la arquitectura técnica del chatbot **FicaAsistant**, detallando cómo interactúan Django, los WebSockets y el modelo de IA Llama-3.2 para ofrecer respuestas en tiempo real.
+Este documento describe la arquitectura técnica del chatbot **FicaAsistant**, detallando cómo interactúan Django, los WebSockets y el modelo de IA Llama-3.2-v3 para ofrecer respuestas en tiempo real.
 
 ---
 
@@ -69,8 +69,10 @@ graph TD
 
 ## 🔄 Flujo Completo de una Interacción
 
-1.  **Conexión**: 
-    Al abrir la página, el navegador inicia un handshake WebSocket con `/ws/chat/`. El `ChatConsumer` acepta la conexión y prepara el historial con la *Instrucción del Sistema* (las reglas de comportamiento del bot).
+1.  **Conexión y Restauración**: 
+    Al abrir la página, el navegador inicia un handshake WebSocket con `/ws/chat/`. 
+    *   Si es la primera vez, se inicializa el historial con la *Instrucción del Sistema*.
+    *   Si el usuario recarga la página, el navegador envía automáticamente el historial previo (`restore_history: true`) para mantener el contexto de la conversación.
 
 2.  **Recepción del Mensaje**:
     El usuario envía `{"message": "¿Cuándo son las matrículas?"}`. El consumidor recibe el JSON y lo agrega al historial de la conversación.
