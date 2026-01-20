@@ -10,18 +10,18 @@ El siguiente diagrama ilustra el flujo de datos desde que el usuario envía un m
 
 ```mermaid
 graph TD
-    User([👤 Usuario])
-    Browser[🌐 Navegador (Frontend)]
+    User(["👤 Usuario"])
+    Browser["🌐 Navegador (Frontend)"]
     
     subgraph "Backend Server (Daphne/Django)"
-        ASGI[🔌 ASGI Interface (Daphne)]
-        Router[🔀 URL Router (Django Channels)]
-        Consumer[⚡ ChatConsumer (Async)]
+        ASGI["🔌 ASGI Interface (Daphne)"]
+        Router["🔀 URL Router (Django Channels)"]
+        Consumer["⚡ ChatConsumer (Async)"]
         
         subgraph "IA Engine (GPU)"
-            Tokenizer[🔤 Tokenizer]
-            Model[🧠 Llama-3.2-3B (4-bit)]
-            Thread[🧵 Generation Thread]
+            Tokenizer["🔤 Tokenizer"]
+            Model["🧠 Llama-3.2-3B (4-bit)"]
+            Thread["🧵 Generation Thread"]
         end
     end
     
