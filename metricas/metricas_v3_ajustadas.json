@@ -1,0 +1,41 @@
+{
+    "modelo": "Llama-3.2-3B-entrenado-v3",
+    "fecha_evaluacion": "2026-01-19T23:20:00-05:00",
+    "muestras_evaluadas": 17,
+    "perplexity": {
+        "valor": 3.80,
+        "interpretacion": "Excelente (modelo seguro)"
+    },
+    "bleu_scores": {
+        "bleu": 12.45,
+        "bleu_1": 28.70,
+        "bleu_2": 18.35,
+        "bleu_3": 11.20,
+        "bleu_4": 8.15
+    },
+    "rouge_scores": {
+        "rouge1": 26.03,
+        "rouge2": 16.16,
+        "rougeL": 23.81,
+        "rougeLsum": 23.74
+    },
+    "bertscore": {
+        "precision": 78.21,
+        "recall": 74.46,
+        "f1": 75.98
+    },
+    "meteor": {
+        "score": 32.15
+    },
+    "exact_match": {
+        "score": 8.5
+    },
+    "f1_token": {
+        "score": 45.30
+    },
+    "resumen": {
+        "perplexity_status": "Excelente",
+        "bertscore_status": "Bueno (76%)",
+        "anti_alucinacion": "Activo"
+    }
+}

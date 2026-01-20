@@ -1,0 +1,53 @@
+# Versiones Compatibles para Unsloth
+# Documentado: 2026-01-19
+# Testeado en: Windows 11, Python 3.12.0, RTX 2070 SUPER
+
+# Core ML
+torch==2.4.0
+torchvision==0.19.0
+torchaudio==2.4.0
+# Instalar con: --index-url https://download.pytorch.org/whl/cu121
+
+# Transformers & Training
+transformers==4.46.3
+datasets==3.2.0
+accelerate==1.2.1
+peft==0.14.0
+trl==0.12.2
+bitsandbytes==0.45.0
+
+# Unsloth (instalar con --no-deps)
+unsloth==2024.12.5
+unsloth-zoo==2024.12.5
+# Fallback si no existe: unsloth==2024.11.7, unsloth-zoo==2024.11.7
+
+# Dependencies para Unsloth
+xformers==0.0.27.post2
+protobuf==3.20.3
+triton-windows
+
+# Evaluation
+evaluate>=0.4.0
+bert-score>=0.3.13
+sacrebleu>=2.3.1
+rouge-score>=0.1.2
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utils
+pandas>=2.0.0
+numpy==1.26.4  # IMPORTANTE: No usar 2.x
+scikit-learn>=1.3.0
+scipy>=1.10.0
+pyyaml
+ftfy
+tqdm
+
+# NOTAS IMPORTANTES:
+# 1. NumPy DEBE ser 1.26.x (no 2.x) para compatibilidad con PyTorch 2.4.0
+# 2. xformers debe ser 0.0.27.post2 (compilado para PyTorch 2.4.0)
+# 3. protobuf < 4.0.0 requerido por Unsloth
+# 4. Unsloth debe instalarse con --no-deps para evitar conflictos
+# 5. Triton viene precompilado para Windows como triton-windows

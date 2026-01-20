@@ -103,6 +103,21 @@ python train_peft_v3.py
 
 ## 💬 Ejecutar el Chatbot
 
+### Paso 0: Descargar modelos entrenados
+
+> ⚠️ **Los modelos entrenados NO están incluidos en el repositorio** debido a su tamaño.
+
+Descarga el modelo v3 desde Hugging Face:
+```bash
+# Instalar huggingface_hub si no lo tienes
+pip install huggingface_hub
+
+# Descargar el modelo (crea la carpeta automáticamente)
+huggingface-cli download Dylanjesus65/FicaAsistant-Llama-3.2-3B-v3 --local-dir chatbot/chatbot_app/Llama-3.2-3B-entrenado-v3
+```
+
+O si prefieres entrenar tu propio modelo, sigue las instrucciones en la sección [Fine-Tuning del Modelo](#-fine-tuning-del-modelo).
+
 ### Paso 1: Iniciar servidor
 ```bash
 venv312\Scripts\activate

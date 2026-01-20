@@ -1,0 +1,14 @@
+torch
+transformers>=4.40.0
+datasets
+peft
+bitsandbytes
+trl
+accelerate
+pyyaml
+scipy
+pdfplumber
+pytesseract
+pdf2image
+pillow
+ftfy

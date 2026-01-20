@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatbot FICA</title>
+  <style>
+    :root {
+      --brand-red: #d20a11;
+      --brand-gray: #706f6f;
+      --bg-light: #f5f5f5;
+      --chat-bg: #ffffff;
+      --bot-bg: #ffffff;
+      --bot-text: #000000;
+      --user-bg: var(--brand-red);
+      --user-text: #ffffff;
+    }
+    body.dark {
+      --bg-light: #121212;
+      --chat-bg: #1e1e1e;
+      --bot-bg: #2a2a2a;
+      --bot-text: #e0e0e0;
+      --user-bg: var(--brand-red);
+      --user-text: #ffffff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-light);
+      color: var(--bot-text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      background: var(--chat-bg);
+    }
+    .msg {
+      max-width: 70%;
+      padding: .5rem .75rem;
+      border-radius: 12px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .bot {
+      background: var(--bot-bg);
+      color: var(--bot-text);
+      align-self: flex-start;
+    }
+    .user {
+      background: var(--user-bg);
+      color: var(--user-text);
+      align-self: flex-end;
+    }
+    footer {
+      display: flex;
+      gap: .5rem;
+      background: #eee;
+      padding: .5rem;
+    }
+    textarea {
+      flex: 1;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: .5rem;
+      font-size: 1rem;
+      resize: none;
+      max-height: 150px;
+      background: #fff;
+    }
+    button {
+      padding: .6rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+    #actionBtn {
+      background: var(--brand-red);
+      color: #fff;
+    }
+    #toggleDark {
+      background: var(--bot-bg);
+      border: 1px solid var(--brand-gray);
+    }
+    .loading::after {
+      content: "";
+      display: inline-block;
+      width: 1.2em;
+      text-align: left;
+      animation: dots 1s steps(3,end) infinite;
+    }
+    @keyframes dots {
+      0% { content: ""; }
+      33% { content: "."; }
+      66% { content: ".."; }
+      100% { content: "..."; }
+    }
+  </style>
+</head>
+<body>
+  <main id="chat" class="chat"></main>
+  <footer>
+    <textarea id="input" rows="1" placeholder="Escribe…"></textarea>
+    <button id="actionBtn" disabled>Enviar</button>
+    <button id="toggleDark" title="Modo oscuro/claro">🌓</button>
+  </footer>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const inp  = document.getElementById("input");
+    const actionBtn = document.getElementById("actionBtn");
+    const darkBtn   = document.getElementById("toggleDark");
+
+    let ws = null;
+    let generating = false;
+    let conversationHistory = [];
+    let currentBotBubble = null;
+    let currentBotText = "";
+    let wasCancelled = false;
+
+    function autoResize() {
+      inp.style.height = "auto";
+      inp.style.height = inp.scrollHeight + "px";
+      actionBtn.disabled = !generating && !inp.value.trim();
+    }
+
+    function atBottom() {
+      return chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 10;
+    }
+
+    function bubble(cls, txt = "") {
+      const d = document.createElement("div");
+      d.className = `msg ${cls}`;
+      d.textContent = txt;
+      chat.append(d);
+      if (atBottom()) chat.scrollTop = chat.scrollHeight;
+      return d;
+    }
+
+    inp.addEventListener("input", autoResize);
+
+    function connectWebSocket() {
+      const WS_SCHEME = window.location.protocol === "https:" ? "wss://" : "ws://";
+      ws = new WebSocket(`${WS_SCHEME}${window.location.host}/ws/chat/`);
+
+      ws.onopen = () => {
+        if (conversationHistory.length > 0) {
+          ws.send(JSON.stringify({
+            restore_history: true,
+            history: conversationHistory
+          }));
+        } else {
+          bubble("bot", "🤖 Conexión establecida.");
+          bubble("bot", "Hola, mucho gusto, soy tu asistente. ¿En qué puedo ayudarte?");
+        }
+      };
+
+      ws.onerror = () => bubble("bot", "⚠️ Error de conexión.");
+
+      ws.onclose = () => {
+        if (!wasCancelled) {
+          bubble("bot", "⚠️ Conexión cerrada.");
+        }
+        wasCancelled = false;
+      };
+
+      ws.onmessage = ({ data }) => {
+        const msg = JSON.parse(data);
+
+        if (msg.type === "stream") {
+          generating = true;
+          actionBtn.textContent = "Detener";
+          actionBtn.disabled = false;
+
+          if (!currentBotBubble) {
+            currentBotBubble = bubble("bot", "");
+            currentBotBubble.classList.add("loading");
+            currentBotText = "";
+          }
+
+          let chunk = msg.content;
+          // Borra cualquier aparición de assistant o FicaAssistant
+          chunk = chunk.replace(/^assistant[\s:,-]*/i, "")
+                       .replace(/^FicaAssistant:\s*/i, "")
+                       .replace(/\bassistant\b/gi, "")
+                       .replace(/FicaAssistant:/gi, "")
+                       .trimStart();
+
+          currentBotText += chunk;
+          currentBotBubble.textContent = currentBotText;
+
+          if (atBottom()) chat.scrollTop = chat.scrollHeight;
+        }
+        if (msg.type === "done") {
+          finishResponse();
+        }
+        if (msg.type === "history_restored") {
+          // Opcional: log restauración de historial
+        }
+      };
+    }
+
+    function finishResponse(suffix = "") {
+      generating = false;
+      actionBtn.textContent = "Enviar";
+      actionBtn.disabled = false;
+
+      if (currentBotBubble) {
+        currentBotBubble.classList.remove("loading");
+        if (suffix) currentBotBubble.textContent += suffix;
+
+        conversationHistory.push({
+          role: "assistant",
+          content: currentBotText
+        });
+
+        currentBotBubble = null;
+        currentBotText = "";
+      }
+      autoResize();
+    }
+
+    actionBtn.addEventListener("click", () => {
+      if (generating) {
+        wasCancelled = true;
+        if (currentBotBubble) {
+          currentBotBubble.textContent += " [Detenido]";
+          currentBotBubble.classList.remove("loading");
+          conversationHistory.push({
+            role: "assistant",
+            content: currentBotText + " [Detenido]"
+          });
+          currentBotBubble = null;
+          currentBotText = "";
+        }
+        ws.close();
+        generating = false;
+        actionBtn.textContent = "Enviar";
+        setTimeout(() => {
+          connectWebSocket();
+        }, 500);
+      } else {
+        const text = inp.value.trim();
+        if (!text) return;
+
+        bubble("user", text);
+        conversationHistory.push({
+          role: "user",
+          content: text
+        });
+
+        ws.send(JSON.stringify({ message: text }));
+        inp.value = "";
+        autoResize();
+      }
+    });
+
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (!actionBtn.disabled) {
+          actionBtn.click();
+        }
+      }
+    });
+
+    darkBtn.onclick = () => document.body.classList.toggle("dark");
+    connectWebSocket();
+  </script>
+</body>
+</html>
