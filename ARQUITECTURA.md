@@ -20,7 +20,7 @@ graph TD
         
         subgraph "IA Engine (GPU)"
             Tokenizer["🔤 Tokenizer"]
-            Model["🧠 Llama-3.2-3B (4-bit)"]
+            Model["🧠 Llama-3.2-3B-trained-v3 (4-bit)"]
             Thread["🧵 Generation Thread"]
         end
     end
