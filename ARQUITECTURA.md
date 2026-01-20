@@ -25,20 +25,20 @@ graph TD
         end
     end
     
-    User -->|Escribe Mensaje| Browser
-    Browser -->|WebSocket (JSON)| ASGI
-    ASGI -->|Route /ws/chat/| Router
-    Router -->|Instancia| Consumer
+    User -->|"Escribe Mensaje"| Browser
+    Browser -->|"WebSocket (JSON)"| ASGI
+    ASGI -->|"Route /ws/chat/"| Router
+    Router -->|"Instancia"| Consumer
     
-    Consumer -->|Restores History| Consumer
-    Consumer -->|Inputs| Tokenizer
-    Tokenizer -->|Tokens| Model
+    Consumer -->|"Restores History"| Consumer
+    Consumer -->|"Inputs"| Tokenizer
+    Tokenizer -->|"Tokens"| Model
     
-    Model -.->|Stream Tokens| Thread
-    Thread -.->|Yield Tokens| Consumer
-    Consumer -->|Send JSON| ASGI
-    ASGI -->|WebSocket Stream| Browser
-    Browser -->|Renderiza| User
+    Model -.->|"Stream Tokens"| Thread
+    Thread -.->|"Yield Tokens"| Consumer
+    Consumer -->|"Send JSON"| ASGI
+    ASGI -->|"WebSocket Stream"| Browser
+    Browser -->|"Renderiza"| User
 ```
 
 ---
