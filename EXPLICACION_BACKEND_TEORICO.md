@@ -55,6 +55,67 @@ Cliente ←───────────────────────
 | Conexiones simultáneas | Limitadas por threads | Miles (event loop) |
 | Streaming de respuestas | No viable | Óptimo |
 
+### 3.4 Diagrama Comparativo de Flujos
+
+El siguiente diagrama ilustra visualmente la diferencia fundamental entre ambos paradigmas de comunicación:
+
+```
+╔═══════════════════════════════════════════════════════════════════════════════════════╗
+║                        COMPARATIVA DE ARQUITECTURAS                                    ║
+╠═══════════════════════════════════════╦═══════════════════════════════════════════════╣
+║     WSGI (Tradicional - Síncrono)     ║       ASGI (Implementado - Asíncrono)         ║
+╠═══════════════════════════════════════╬═══════════════════════════════════════════════╣
+║                                       ║                                               ║
+║  ┌─────────┐                          ║  ┌─────────┐                                  ║
+║  │ CLIENTE │                          ║  │ CLIENTE │                                  ║
+║  └────┬────┘                          ║  └────┬────┘                                  ║
+║       │                               ║       │                                       ║
+║       │ ──── Petición HTTP ────►      ║       │ ══════ Conexión WebSocket ══════      ║
+║       │                               ║       │         (túnel abierto)               ║
+║  ┌────▼────┐                          ║  ┌────▼────┐                                  ║
+║  │SERVIDOR │  ⏳ Procesando...        ║  │SERVIDOR │◄─────────────────────────►       ║
+║  │  (WSGI) │  ⏳ (bloqueado)          ║  │ (ASGI)  │  Bidireccional continuo          ║
+║  └────┬────┘                          ║  └────┬────┘                                  ║
+║       │                               ║       │                                       ║
+║       │ ◄── Respuesta COMPLETA ──     ║       │  ◄── token ──                        ║
+║       │     (toda la respuesta        ║       │  ◄── token ──                        ║
+║       │      de una sola vez)         ║       │  ◄── token ──  (streaming)           ║
+║       │                               ║       │  ◄── token ──                        ║
+║       ▼                               ║       │  ◄── token ──                        ║
+║  ╳ CONEXIÓN CERRADA                   ║       │  ◄── [done] ──                       ║
+║                                       ║       │                                       ║
+║  ════════════════════                 ║       │  (conexión sigue viva para           ║
+║  Para nueva pregunta:                 ║       │   la siguiente pregunta)             ║
+║  → Nueva conexión completa            ║       ▼                                       ║
+║  → Headers repetidos                  ║  ═══════════════════════════                  ║
+║  → Esperar respuesta completa         ║  Ventajas:                                    ║
+║                                       ║  ✓ Sin reconexión                             ║
+║                                       ║  ✓ Respuesta inmediata                        ║
+║                                       ║  ✓ Menor latencia percibida                   ║
+║                                       ║                                               ║
+╠═══════════════════════════════════════╬═══════════════════════════════════════════════╣
+║  EXPERIENCIA DE USUARIO:              ║  EXPERIENCIA DE USUARIO:                      ║
+║                                       ║                                               ║
+║  Usuario: "¿Qué es la matrícula?"     ║  Usuario: "¿Qué es la matrícula?"             ║
+║                                       ║                                               ║
+║  ⏳ Esperando... (3-5 segundos)       ║  Bot: "La"                                    ║
+║  ⏳ Esperando...                      ║  Bot: "La matrícula"                          ║
+║  ⏳ Esperando...                      ║  Bot: "La matrícula es"                       ║
+║                                       ║  Bot: "La matrícula es el"                    ║
+║  Bot: "La matrícula es el proceso     ║  Bot: "La matrícula es el proceso"            ║
+║        de inscripción oficial..."     ║  Bot: "La matrícula es el proceso de..."      ║
+║                                       ║                                               ║
+║  (Respuesta aparece de golpe)         ║  (Respuesta aparece palabra por palabra)      ║
+║                                       ║                                               ║
+╚═══════════════════════════════════════╩═══════════════════════════════════════════════╝
+```
+
+**Interpretación del Diagrama**:
+
+- **WSGI (izquierda)**: Cada interacción es un ciclo cerrado. El cliente envía una petición, el servidor procesa (bloqueando recursos), genera la respuesta completa en memoria, y finalmente la envía. La conexión se cierra inmediatamente después, requiriendo un nuevo handshake para cada mensaje.
+
+- **ASGI (derecha)**: Se establece un túnel persistente mediante WebSocket. El servidor puede enviar fragmentos de respuesta (tokens) de forma incremental mientras el modelo de IA los genera. La conexión permanece activa, permitiendo múltiples intercambios sin sobrecarga de reconexión.
+
 ---
 
 ## 4. WebSockets: Fundamentos Teóricos
