@@ -139,6 +139,95 @@ Sec-WebSocket-Version: 13
 
 El servidor responde con código 101 (Switching Protocols) y la conexión se convierte en WebSocket.
 
+#### Diagrama de Secuencia: Proceso de Handshake WebSocket
+
+El siguiente diagrama ilustra cómo una conexión HTTP tradicional se "transforma" en un canal de comunicación en tiempo real:
+
+```
+     ┌──────────────┐                                      ┌──────────────┐
+     │              │                                      │              │
+     │   CLIENTE    │                                      │   SERVIDOR   │
+     │  (Navegador) │                                      │   (Daphne)   │
+     │              │                                      │              │
+     └──────┬───────┘                                      └──────┬───────┘
+            │                                                     │
+            │                                                     │
+    ════════╪═════════════════════════════════════════════════════╪════════
+            │         FASE 1: SOLICITUD DE UPGRADE (HTTP)         │
+    ════════╪═════════════════════════════════════════════════════╪════════
+            │                                                     │
+            │  ┌─────────────────────────────────────────────┐    │
+            │  │ GET /ws/chat/ HTTP/1.1                      │    │
+            │  │ Host: localhost:8000                        │    │
+            │  │ Upgrade: websocket  ◄── Solicita cambio     │    │
+            │  │ Connection: Upgrade                         │    │
+            │  │ Sec-WebSocket-Key: dGhlIHNh...              │    │
+            │  └─────────────────────────────────────────────┘    │
+            │ ──────────────────────────────────────────────────► │
+            │                                                     │
+            │                                                     │
+    ════════╪═════════════════════════════════════════════════════╪════════
+            │         FASE 2: CONFIRMACIÓN DEL SERVIDOR           │
+    ════════╪═════════════════════════════════════════════════════╪════════
+            │                                                     │
+            │    ┌─────────────────────────────────────────────┐  │
+            │    │ HTTP/1.1 101 Switching Protocols            │  │
+            │    │ Upgrade: websocket                          │  │
+            │    │ Connection: Upgrade                         │  │
+            │    │ Sec-WebSocket-Accept: s3pPLMBiTx...         │  │
+            │    └─────────────────────────────────────────────┘  │
+            │ ◄────────────────────────────────────────────────── │
+            │                                                     │
+            │  ✓ Protocolo cambiado exitosamente                  │
+            │  ✓ Ya no es HTTP, ahora es WebSocket                │
+            │                                                     │
+            │                                                     │
+    ════════╪═════════════════════════════════════════════════════╪════════
+            │    FASE 3: CONEXIÓN PERSISTENTE BIDIRECCIONAL       │
+    ════════╪═════════════════════════════════════════════════════╪════════
+            │                                                     │
+            │ ╔═══════════════════════════════════════════════════╗
+            │ ║                                                   ║
+            │ ║   ┌─────────────────────────────────────────┐     ║
+            │ ║   │     TÚNEL WEBSOCKET ABIERTO             │     ║
+            │ ║   │     (Conexión TCP persistente)          │     ║
+            │ ║   └─────────────────────────────────────────┘     ║
+            │ ║                                                   ║
+            │ ║   ──► {"message": "Hola"}                         ║
+            │ ║                                                   ║
+            │ ║   ◄── {"type": "stream", "content": "¡Hola"}      ║
+            │ ║   ◄── {"type": "stream", "content": "!"}          ║
+            │ ║   ◄── {"type": "stream", "content": " ¿En"}       ║
+            │ ║   ◄── {"type": "stream", "content": " qué"}       ║
+            │ ║   ◄── {"type": "stream", "content": " puedo"}     ║
+            │ ║   ◄── {"type": "stream", "content": " ayudarte?"} ║
+            │ ║   ◄── {"type": "done"}                            ║
+            │ ║                                                   ║
+            │ ║   ──► {"message": "¿Qué es la matrícula?"}        ║
+            │ ║                                                   ║
+            │ ║   ◄── {"type": "stream", "content": "La"}         ║
+            │ ║   ◄── {"type": "stream", "content": " matrícula"} ║
+            │ ║   ◄── ...                                         ║
+            │ ║                                                   ║
+            │ ║   (La conexión permanece abierta indefinidamente) ║
+            │ ║   (No hay overhead de reconexión entre mensajes)  ║
+            │ ║                                                   ║
+            │ ╚═══════════════════════════════════════════════════╝
+            │                                                     │
+            ▼                                                     ▼
+         TIEMPO                                                TIEMPO
+```
+
+**Figura 4.1**: Diagrama de secuencia del proceso de handshake WebSocket, mostrando la transición desde una solicitud HTTP inicial hacia una conexión persistente bidireccional.
+
+**Interpretación del Diagrama**:
+
+1. **Fase 1 - Solicitud de Upgrade**: El cliente inicia con una petición HTTP estándar, pero incluye headers especiales (`Upgrade: websocket`) que indican su intención de cambiar de protocolo.
+
+2. **Fase 2 - Confirmación**: El servidor valida la solicitud y responde con código **101 Switching Protocols**. Este es el último mensaje HTTP de la conexión.
+
+3. **Fase 3 - Canal Persistente**: A partir de este momento, la conexión TCP subyacente permanece abierta. Ambas partes pueden enviar mensajes en cualquier momento sin esperar turno (full-duplex), representado por el recuadro que engloba múltiples intercambios.
+
 ### 4.3 Ventajas para Sistemas de IA Conversacional
 
 | Aspecto | HTTP Tradicional | WebSocket |
